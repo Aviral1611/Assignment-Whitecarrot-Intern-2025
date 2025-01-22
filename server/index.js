@@ -1,61 +1,104 @@
-import 'dotenv/config'; // automatically loads .env
+import 'dotenv/config';      // or require('dotenv').config() if using CommonJS
 import express from 'express';
 import cors from 'cors';
-import { OAuth2Client } from 'google-auth-library';
-
+import { google } from 'googleapis';
 
 const app = express();
 app.use(cors());
 app.use(express.json());
 
-// Load the Google client ID and secret from your .env
-const CLIENT_ID = process.env.GOOGLE_CLIENT_ID;
-const CLIENT_SECRET = process.env.GOOGLE_CLIENT_SECRET;
+// Load env vars
+const {
+  GOOGLE_CLIENT_ID,
+  GOOGLE_CLIENT_SECRET,
+  GOOGLE_REDIRECT_URI,
+  PORT
+} = process.env;
 
-const client = new OAuth2Client(CLIENT_ID, CLIENT_SECRET);
+// Create an OAuth2 client
+const oauth2Client = new google.auth.OAuth2(
+  GOOGLE_CLIENT_ID,
+  GOOGLE_CLIENT_SECRET,
+  GOOGLE_REDIRECT_URI
+);
 
-app.get("/", (req, res) => {
-  res.send("Server is running!");
+// SCOPES we want (read-only access to calendars and events)
+const SCOPES = [
+  'https://www.googleapis.com/auth/calendar.readonly'
+];
+
+// 1) Endpoint to start OAuth flow (redirect user to Google's consent screen)
+app.get('/api/auth/google', (req, res) => {
+  // Generate a URL to Google's consent page
+  const authUrl = oauth2Client.generateAuthUrl({
+    access_type: 'offline',     // Request refresh token
+    prompt: 'consent',          // Force consent to get refresh token every time
+    scope: SCOPES
+  });
+  // Redirect user to that URL
+  res.redirect(authUrl);
 });
 
-// Endpoint to verify Google token
-app.post("/api/auth/google", async (req, res) => {
-  const { credential } = req.body;
-
-  if (!credential) {
-    return res.status(400).json({ error: "Missing credential" });
+// 2) OAuth2 Callback: Google redirects here with ?code=...
+app.get('/api/auth/google/callback', async (req, res) => {
+  const code = req.query.code;
+  if (!code) {
+    return res.status(400).send('No code returned from Google');
   }
 
   try {
-    // Verify the token
-    const ticket = await client.verifyIdToken({
-      idToken: credential,
-      audience: CLIENT_ID,
-    });
+    // Exchange the code for tokens
+    const { tokens } = await oauth2Client.getToken(code);
+    // tokens.access_token and tokens.refresh_token are now available
 
-    // Payload has the user's profile info
-    const payload = ticket.getPayload();
-    const { sub, email, name, picture } = payload;
+    // Store tokens in session/DB if needed, or attach to query params, or a JWT.
+    // For simplicity, let's redirect to the frontend with the tokens in the URL.
+    const frontEndUrl = `http://localhost:5173?access_token=${tokens.access_token}&refresh_token=${tokens.refresh_token}`;
+    res.redirect(frontEndUrl);
 
-    console.log("User verified:", { sub, email, name, picture });
-
-    // TODO: check if user exists in DB; if not, create new user; etc.
-
-    return res.json({
-      success: true,
-      user: {
-        id: sub,
-        email,
-        name,
-        picture,
-      },
-      message: "User verified successfully",
-    });
-  } catch (error) {
-    console.error("Error verifying Google ID token:", error);
-    return res.status(401).json({ error: "Invalid ID token" });
+  } catch (err) {
+    console.error('Error exchanging code for tokens:', err);
+    res.status(500).send('Authentication error');
   }
 });
 
-const PORT = process.env.PORT || 4000;
-app.listen(PORT, () => console.log(`Server listening on port ${PORT}`));
+// 3) Fetch Calendar Events: a protected route that uses the user's access token
+app.post('/api/calendar/events', async (req, res) => {
+  const { accessToken } = req.body; // or read from session, etc.
+
+  if (!accessToken) {
+    return res.status(400).json({ error: 'No access token provided' });
+  }
+
+  try {
+    // Set OAuth2 client credentials
+    oauth2Client.setCredentials({ access_token: accessToken });
+
+    // Create a Calendar API client
+    const calendar = google.calendar({ version: 'v3', auth: oauth2Client });
+
+    // Fetch events (example: 'primary' calendar, up to 50 upcoming events)
+    const response = await calendar.events.list({
+      calendarId: 'primary',
+      maxResults: 50,
+      orderBy: 'startTime',
+      singleEvents: true,
+      // timeMin: (new Date()).toISOString(), // for only upcoming
+    });
+
+    // Return the events
+    const events = response.data.items || [];
+    res.json({ events });
+  } catch (err) {
+    console.error('Error fetching calendar events:', err);
+    res.status(500).json({ error: 'Unable to fetch events' });
+  }
+});
+
+app.get('/', (req, res) => {
+  res.send('Server is up and running!');
+});
+
+app.listen(PORT, () => {
+  console.log(`Server listening on port ${PORT}`);
+});
