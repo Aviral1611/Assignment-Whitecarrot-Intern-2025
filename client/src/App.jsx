@@ -1,28 +1,24 @@
-import { useEffect, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 
 function App() {
   const [accessToken, setAccessToken] = useState(null);
   const [events, setEvents] = useState([]);
+  const [filterStart, setFilterStart] = useState('');
+  const [filterEnd, setFilterEnd] = useState('');
 
-  // 1) Check if we got an access token via query params
-  //    If so, store it in state (or localStorage)
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     const token = params.get('access_token');
     if (token) {
       setAccessToken(token);
-      // Optionally remove it from the URL (for cleanliness)
       window.history.replaceState({}, '', '/');
     }
   }, []);
 
-  // 2) Function to begin the OAuth flow
   const handleLogin = () => {
-    // This will redirect the user to Google’s consent screen
     window.location.href = 'http://localhost:4000/api/auth/google';
   };
 
-  // 3) Fetch events from the server, using the access token
   const fetchEvents = async () => {
     if (!accessToken) return;
     try {
@@ -38,47 +34,82 @@ function App() {
     }
   };
 
+  const getFilteredEvents = () => {
+    const startDate = filterStart ? new Date(filterStart) : new Date('1970-01-01');
+    const endDate = filterEnd ? new Date(filterEnd) : new Date('9999-12-31');
+
+    return events.filter((event) => {
+      const eventStart = new Date(event.start?.dateTime || event.start?.date);
+      return eventStart >= startDate && eventStart <= endDate;
+    });
+  };
+
+  // Sort by descending start time
+  const filteredEvents = getFilteredEvents().sort(
+    (a, b) =>
+      new Date(b.start?.dateTime || b.start?.date) -
+      new Date(a.start?.dateTime || a.start?.date)
+  );
+
   return (
     <div style={{ margin: '2rem' }}>
       <h1>Google Calendar Integration</h1>
 
-      {/* 1) If no access token, show "Login with Google" button */}
+      {/* If there's no access token yet, show the login button. */}
       {!accessToken && (
         <button onClick={handleLogin}>Login with Google (Calendar Scope)</button>
       )}
 
-      {/* 2) If we have an access token, show "Fetch Events" button */}
+      {/* If we do have an access token, show the "Fetch Events" button. */}
       {accessToken && (
         <button onClick={fetchEvents}>Fetch My Calendar Events</button>
       )}
 
-      {/* 3) Display events in a simple table */}
-      {events.length > 0 && (
-        <table border="1" cellPadding="5" style={{ marginTop: '1rem' }}>
-          <thead>
-            <tr>
-              <th>Summary</th>
-              <th>Start</th>
-              <th>End</th>
-            </tr>
-          </thead>
-          <tbody>
-            {events
-              // Sort by descending start time (most recent first)
-              .sort((a, b) => new Date(b.start?.dateTime || b.start?.date) - new Date(a.start?.dateTime || a.start?.date))
-              .map((event) => {
-                const start = event.start?.dateTime || event.start?.date;
-                const end = event.end?.dateTime || event.end?.date;
-                return (
-                  <tr key={event.id}>
-                    <td>{event.summary}</td>
-                    <td>{start}</td>
-                    <td>{end}</td>
-                  </tr>
-                );
-              })}
-          </tbody>
-        </table>
+      {/* Only show the filter fields and table if the user is logged in (accessToken). */}
+      {accessToken && (
+        <div style={{ marginTop: '1rem' }}>
+          <div>
+            <label>Start Date: </label>
+            <input
+              type="date"
+              value={filterStart}
+              onChange={(e) => setFilterStart(e.target.value)}
+            />
+
+            <label style={{ marginLeft: '1rem' }}>End Date: </label>
+            <input
+              type="date"
+              value={filterEnd}
+              onChange={(e) => setFilterEnd(e.target.value)}
+            />
+          </div>
+
+          {/* Display the filtered events in a table if any exist */}
+          {filteredEvents.length > 0 && (
+            <table border="1" cellPadding="5" style={{ marginTop: '1rem' }}>
+              <thead>
+                <tr>
+                  <th>Summary</th>
+                  <th>Start</th>
+                  <th>End</th>
+                </tr>
+              </thead>
+              <tbody>
+                {filteredEvents.map((event) => {
+                  const start = event.start?.dateTime || event.start?.date;
+                  const end = event.end?.dateTime || event.end?.date;
+                  return (
+                    <tr key={event.id}>
+                      <td>{event.summary}</td>
+                      <td>{start}</td>
+                      <td>{end}</td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          )}
+        </div>
       )}
     </div>
   );
