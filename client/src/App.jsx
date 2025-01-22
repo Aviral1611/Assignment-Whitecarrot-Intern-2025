@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import './App.css'; // <-- import the CSS
 
 function App() {
   const [accessToken, setAccessToken] = useState(null);
@@ -52,41 +53,53 @@ function App() {
   );
 
   return (
-    <div style={{ margin: '2rem' }}>
+    <div className="app-container">
       <h1>Google Calendar Integration</h1>
 
       {/* If there's no access token yet, show the login button. */}
       {!accessToken && (
-        <button onClick={handleLogin}>Login with Google (Calendar Scope)</button>
+        <div className="button-center"> 
+        <button className="button" onClick={handleLogin}>
+          Login with Google (Calendar Scope)
+        </button>
+        </div>
       )}
 
       {/* If we do have an access token, show the "Fetch Events" button. */}
       {accessToken && (
-        <button onClick={fetchEvents}>Fetch My Calendar Events</button>
+        <div className="button-center"> 
+        <button className="button" onClick={fetchEvents}>
+          Fetch My Calendar Events
+        </button>
+        </div>
       )}
 
-      {/* Only show the filter fields and table if the user is logged in (accessToken). */}
       {accessToken && (
-        <div style={{ marginTop: '1rem' }}>
-          <div>
-            <label>Start Date: </label>
-            <input
-              type="date"
-              value={filterStart}
-              onChange={(e) => setFilterStart(e.target.value)}
-            />
+        <div>
+          {/* Filter fields */}
+          <div className="filter-container">
+            <div>
+              <label>Start Date: </label>
+              <input
+                type="date"
+                value={filterStart}
+                onChange={(e) => setFilterStart(e.target.value)}
+              />
+            </div>
 
-            <label style={{ marginLeft: '1rem' }}>End Date: </label>
-            <input
-              type="date"
-              value={filterEnd}
-              onChange={(e) => setFilterEnd(e.target.value)}
-            />
+            <div>
+              <label>End Date: </label>
+              <input
+                type="date"
+                value={filterEnd}
+                onChange={(e) => setFilterEnd(e.target.value)}
+              />
+            </div>
           </div>
 
-          {/* Display the filtered events in a table if any exist */}
+          {/* Table of filtered events */}
           {filteredEvents.length > 0 && (
-            <table border="1" cellPadding="5" style={{ marginTop: '1rem' }}>
+            <table>
               <thead>
                 <tr>
                   <th>Summary</th>
