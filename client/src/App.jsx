@@ -23,7 +23,7 @@ function App() {
   const fetchEvents = async () => {
     if (!accessToken) return;
     try {
-      const response = await fetch('http://localhost:4000/api/calendar/events', {
+      const response = await fetch('https://assignment-whitecarrot-intern-2025-j46u.onrender.com', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ accessToken })
