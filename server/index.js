@@ -1,4 +1,4 @@
-import 'dotenv/config';      // or require('dotenv').config() if using CommonJS
+import 'dotenv/config';      
 import express from 'express';
 import cors from 'cors';
 import { google } from 'googleapis';
