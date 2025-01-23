@@ -17,13 +17,13 @@ function App() {
   }, []);
 
   const handleLogin = () => {
-    window.location.href = 'http://localhost:4000/api/auth/google';
+    window.location.href = 'https://assignment-whitecarrot-intern-2025-j46u.onrender.com/api/auth/google';
   };
 
   const fetchEvents = async () => {
     if (!accessToken) return;
     try {
-      const response = await fetch('https://assignment-whitecarrot-intern-2025-j46u.onrender.com', {
+      const response = await fetch('https://assignment-whitecarrot-intern-2025-j46u.onrender.com/api/auth/google', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ accessToken })
