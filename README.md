@@ -140,4 +140,3 @@ window.location.href = "http://localhost:4000/api/auth/google";
 With:
 
 window.location.href = "https://<your-server>.onrender.com/api/auth/google";
-```
