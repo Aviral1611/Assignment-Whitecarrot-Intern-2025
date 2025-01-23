@@ -53,7 +53,7 @@ app.get('/api/auth/google/callback', async (req, res) => {
 
     // Store tokens in session/DB if needed, or attach to query params, or a JWT.
     // For simplicity, let's redirect to the frontend with the tokens in the URL.
-    const frontEndUrl = `http://localhost:5173?access_token=${tokens.access_token}&refresh_token=${tokens.refresh_token}`;
+    const frontEndUrl = `https://assignment-whitecarrot-intern-2025-1-41pv.onrender.com?access_token=${tokens.access_token}&refresh_token=${tokens.refresh_token}`;
     res.redirect(frontEndUrl);
 
   } catch (err) {
