@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import  { useEffect, useState } from 'react';
 import './App.css'; // <-- import the CSS
 
 function App() {
@@ -23,7 +23,7 @@ function App() {
   const fetchEvents = async () => {
     if (!accessToken) return;
     try {
-      const response = await fetch('https://assignment-whitecarrot-intern-2025-j46u.onrender.com/api/auth/google', {
+      const response = await fetch('https://assignment-whitecarrot-intern-2025-j46u.onrender.com/api/calendar/events', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ accessToken })
