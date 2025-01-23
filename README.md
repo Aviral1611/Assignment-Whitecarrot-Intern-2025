@@ -1,7 +1,4 @@
 
-Here's the entire project documentation in one continuous Markdown block, including all bash commands:
-
-markdown
 # Google Calendar Integration App
 
 A simple React + Vite front-end and Node/Express back-end that uses Google OAuth to:
